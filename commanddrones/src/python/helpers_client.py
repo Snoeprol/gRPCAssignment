@@ -1,8 +1,10 @@
 import random
-import json
 import dronecommander_pb2
 
-FILE_LOC = r'..\data\paths.json'
+def gen_random_waypoint():
+    lon = random.uniform(-180, 180)
+    lat = random.uniform(-90, 90)
+    return dronecommander_pb2.Waypoint(lat=lat, lon=lon)
 
 def gen_new_position(location):
     lat = location.lat + random.uniform(-0.01, 0.01)
@@ -21,14 +23,6 @@ def move_to_waypoint(waypoint):
     print(
         f"Moving to waypoint: lat {waypoint.lat}, lon {waypoint.lon}"
     )
-    
-def gen_route():
-    # Should only be done with small files
-    routes = json.load(open(FILE_LOC, 'r', encoding='utf-8'))
-    num_routes = len(routes['features'])
-    route_id = random.randint(0, num_routes - 1)
-    route = routes['features'][route_id]['geometry']['coordinates']
-    return route, route_id
 
 async def register_drone(stub):
     register_request = dronecommander_pb2.RegisterRequest(name='killer-drone-69')
@@ -36,3 +30,18 @@ async def register_drone(stub):
     await response
     drone_id = response._invocation_task.result().id
     return drone_id
+
+class Drone:
+    
+    def __init__(self, drone_id):
+        self.id = drone_id
+        self.position = None
+        self.target = None
+    
+    def set_target(self, target):
+        self.target = target
+        
+    def set_position(self, position):
+        self.position = position
+    
+    
