@@ -1,0 +1,4 @@
+grpc==1.0.0
+numpy==1.19.5+vanilla
+protobuf==4.21.5
+~rpcio==1.32.0

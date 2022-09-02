@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package dronecommand;
+
+service DroneCommander {
+   // Register a new client, anod return success r failure.
+   rpc register (RegisterRequest) returns (RegisterReply) {}
+
+   // Listen to server
+   rpc listen_waypoint (ListenWaypointRequest) returns (stream ListenWaypointReply) {}
+
+   // Send position of drone
+   rpc send_position (SendpositionRequest) returns (SendpositionReply) {}
+}
+
+message RegisterRequest {
+  string name = 1;
+}
+
+message RegisterReply {
+   int32 id = 1;
+}
+
+message ListenWaypointRequest {
+  int32 id = 1;
+}
+
+message ListenWaypointReply {
+  Waypoint waypoint = 1;
+}
+
+message SendpositionRequest {
+  Position position = 1;
+  int32 id = 2;
+}
+
+message SendpositionReply {}
+
+// Waypoint message
+message Waypoint {
+  float lat = 1;
+  float lon = 2;
+}
+
+// Position message
+message Position {
+  float lat = 1;
+  float lon = 2;
+  float alt = 3;
+}
