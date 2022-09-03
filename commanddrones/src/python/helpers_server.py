@@ -19,9 +19,20 @@ class RouteGenerator:
         # Check that file in FILE_LOC is smaller than 10 MB
         if os.path.getsize(self.FILE_LOC) > 10e6:
             warnings.warn('File is large and may take a while to load.')
-        self.routes = json.load(open(self.FILE_LOC, 'r', encoding='utf-8'))
+
+        self.routes = self.load_routes()
         self.num_routes = len(self.routes['features'])
+    
+    def load_routes(self):
+        """
+        Loads routes from a json file.
         
+        :return: A list of routes.
+        """
+        with open(open(self.FILE_LOC, 'r', encoding='utf-8')) as f:
+            routes = json.load(f)
+        return routes
+    
     def gen_route(self):
         """
         Picks a random route from the list of routes.

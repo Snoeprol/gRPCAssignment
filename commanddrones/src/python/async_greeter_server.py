@@ -10,6 +10,8 @@ import numpy as np
 
 from helpers_server import RouteGenerator, point_to_waypoint
 
+HOST_ADRESS = "[::]:50051"
+
 class DroneCommander(dronecommander_pb2_grpc.DroneCommanderServicer):
     
     def __init__(self) -> None:
@@ -71,9 +73,8 @@ async def serve() -> None:
     """
     server = grpc.aio.server()
     dronecommander_pb2_grpc.add_DroneCommanderServicer_to_server(DroneCommander(), server)
-    listen_addr = "[::]:50051"
-    server.add_insecure_port(listen_addr)
-    logging.info(f"Starting server on {listen_addr}")
+    server.add_insecure_port(HOST_ADRESS)
+    logging.info(f"Starting server on {HOST_ADRESS}.")
     await server.start()
     await server.wait_for_termination()
 
