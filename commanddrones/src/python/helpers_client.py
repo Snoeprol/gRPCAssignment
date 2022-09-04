@@ -1,6 +1,9 @@
 import random
 import time
+import os
 import dronecommander_pb2
+
+from dataclasses import dataclass
 from geopy.distance import geodesic as GD
 
 # Speed of drone in m/s
@@ -49,6 +52,21 @@ def move_to_waypoint(waypoint):
         f"Moving to waypoint: lat {waypoint.lat}, lon {waypoint.lon}"
     )
 
+def point_to_send_position_request(point, drone_id):
+        """
+        Converts the point to a position request.
+        
+        :return: The position request.
+        """
+        return dronecommander_pb2.SendpositionRequest(
+            id=drone_id,
+            position=dronecommander_pb2.Position(
+                lat=point.lat,
+                lon=point.lon,
+                alt=point.alt
+            )
+        )
+
 async def register_drone(stub):
     """
     Registers the drone with the server.
@@ -62,13 +80,15 @@ async def register_drone(stub):
     drone_id = response._invocation_task.result().id
     return drone_id
 
+@dataclass
 class Point:
-
-    def __init__(self, lat, lon, alt=0):
-        self.lat = lat
-        self.lon = lon
-        self.alt = alt
-
+    """
+    Represents a 3D point in space
+    """
+    lon : float
+    lat : float
+    alt : float = 0
+                      
 class Drone:
 
     def __init__(self, drone_id, vis=False):
@@ -78,11 +98,19 @@ class Drone:
         self.vis = vis
         
         # Start in middle of Amsterdam
-        self.position = Point(lat=52.37817152269896, lon=4.8997896909713745)
+        self.position = Point(lat=52.37817152269896, lon=4.8997896909713745, alt = 10)
         self.target = None
         self.time_since_target = None
         self.target_time = time.time()
+    
+    def position_to_position_request(self):
+        """
+        Makes the drone position into a position request.
         
+        :return: The position request.
+        """
+        return point_to_send_position_request(self.position, self.id)
+     
     def set_target(self, target):
         """
         Set the target of the drone.
@@ -112,9 +140,9 @@ class Drone:
             pos_lat = self.position.lat
             
             dist_traveled = SPEED * self.time_since_target
-            print(dist_traveled)
-            self.target_time = time.time()
             dist_to_target = self.lon_lat_to_dist(pos_lon, pos_lat, target_lon, target_lat)
+                
+            self.target_time = time.time()
             
             # Drone has reached target already
             if dist_traveled > dist_to_target:
@@ -164,8 +192,8 @@ class Drone:
         plt.text(lats[0], lons[0], 'Start', fontsize=10)
         plt.text(lats[-1], lons[-1], 'End', fontsize=10)
         plt.grid()
-        
-        plt.savefig(fr"..\data\drone_path_{path_number}.png", dpi=300)
+        im_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', fr"data\drone_path_{path_number}.png"))
+        plt.savefig(im_path, dpi=300)
         plt.clf()
     
     def lon_lat_to_dist(self, lon1, lat1, lon2, lat2):

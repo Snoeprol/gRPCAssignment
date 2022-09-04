@@ -2,13 +2,11 @@
 """The Python AsyncIO implementation of the GRPC Dronecommander client."""
 
 import asyncio
-import logging
 import grpc
-import dronecommander_pb2
-import dronecommander_pb2_grpc
 
-from helpers_client import gen_random_position, gen_new_position, register_drone
-from helpers_client import Drone
+from dronecommander_pb2 import ListenWaypointRequest
+from dronecommander_pb2_grpc import DroneCommanderStub
+from helpers_client import Drone, register_drone
 
 CHANNEL = "localhost:50051"
 
@@ -21,11 +19,9 @@ async def send_location(stub, pingtime, drone):
     :param drone: The drone.
     :return: None.
     """
-    position = gen_random_position()
     while True:
         drone.set_position()
-        position = gen_new_position(position)
-        position_request = dronecommander_pb2.SendpositionRequest(position=position, id=drone.id)
+        position_request = drone.position_to_position_request()
         stub.send_position(position_request)
         print('Pinged server')
         await asyncio.sleep(pingtime)
@@ -38,16 +34,15 @@ async def receive_location(stub, drone):
     :param drone: The drone.
     :return: None.
     """
-    # May be stuck here if no waypoint is given for a while
     async for response in stub.listen_waypoint(
-        dronecommander_pb2.ListenWaypointRequest(id=drone.id),
+        ListenWaypointRequest(id=drone.id),
     ):  
         print(
             f"Starting path to: lat {response.waypoint.lat:.3f}, lon {response.waypoint.lon:.3f}",
         )
         drone.set_target(response.waypoint)
 
-async def run(pingtime=2) -> None:
+async def run(pingtime=5) -> None:
     """
     Starts the client and connect over gRPC.
     
@@ -55,7 +50,7 @@ async def run(pingtime=2) -> None:
     :return: None.
     """
     async with grpc.aio.insecure_channel(CHANNEL) as channel:
-        stub = dronecommander_pb2_grpc.DroneCommanderStub(channel)
+        stub = DroneCommanderStub(channel)
         
         # Register drone
         drone_id = await register_drone(stub)
@@ -69,5 +64,4 @@ async def run(pingtime=2) -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
     asyncio.run(run())
