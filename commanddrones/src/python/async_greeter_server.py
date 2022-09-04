@@ -6,7 +6,7 @@ import grpc
 
 from dronecommander_pb2 import RegisterReply, ListenWaypointReply, SendpositionReply
 from  dronecommander_pb2_grpc import DroneCommanderServicer, add_DroneCommanderServicer_to_server
-from helpers_server import RouteGenerator, point_to_waypoint, visualize_path
+from helpers_server import RouteGenerator, point_to_waypoint, visualize_path, check_vis
 
 HOST_ADRESS = "[::]:50051"
 REPORTING_PERIOD = 10
@@ -68,9 +68,8 @@ class DroneCommander(DroneCommanderServicer):
         self.positions[drone_id].append(request.position)
 
         # Visualize path
-        if len(self.positions[drone_id]) % REPORTING_PERIOD == 0 and self.vis:
-            path_number = len(self.positions[drone_id]) // REPORTING_PERIOD
-            visualize_path(self.positions[drone_id], path_number, drone_id)
+        if self.vis:
+            check_vis(REPORTING_PERIOD, self.positions[drone_id], drone_id)
 
         logging.info(f"Position ping received from drone {drone_id}")   
         return SendpositionReply()

@@ -68,7 +68,16 @@ def points_to_plot_format(points):
         points_lat.append(point.lat)
         points_lon.append(point.lon)
     return points_lat, points_lon
+
+def check_vis(reporting_period, positions, drone_id):
+    """
+    Check if visualization is on, and plot if the reporting period is met.
     
+    :return: None.
+    """
+    if len(positions) % reporting_period == 0:
+        visualize_path(positions, len(positions), drone_id)
+
 def visualize_path(points, path_number, drone_id):
     """
     If the visualization is on, plot the path of the drone.
