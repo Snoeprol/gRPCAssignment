@@ -53,3 +53,37 @@ def point_to_waypoint(point):
     lon = point[0]
     lat = point[1]
     return dronecommander_pb2.Waypoint(lat=lat, lon=lon)
+
+def points_to_plot_format(points):
+    """
+    Makes the points in the positions list into two lists
+    suitable for plotting.
+    
+    :return: Two lists, one with the lats and one with the lons.
+    """
+    points_lat = []
+    points_lon = []
+    
+    for point in points:
+        points_lat.append(point.lat)
+        points_lon.append(point.lon)
+    return points_lat, points_lon
+    
+def visualize_path(points, path_number, drone_id):
+    """
+    If the visualization is on, plot the path of the drone.
+    
+    :return: None
+    """
+    import matplotlib.pyplot as plt
+    lats, lons = points_to_plot_format(points)
+    plt.plot(lats, lons, c='r', marker='o')
+    
+    # Plot text with start and end point
+    plt.text(lats[0], lons[0], 'Start', fontsize=10)
+    plt.text(lats[-1], lons[-1], 'End', fontsize=10)
+    plt.grid()
+    im_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ),
+                '..', fr"data\drone_{drone_id}_path_{path_number}.png"))
+    plt.savefig(im_path, dpi=300)
+    plt.clf()

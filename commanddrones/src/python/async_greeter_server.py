@@ -2,19 +2,18 @@
 
 import asyncio
 import logging
-import dronecommander_pb2
-import dronecommander_pb2_grpc
 import grpc
 
-import numpy as np
-
-from helpers_server import RouteGenerator, point_to_waypoint
+from dronecommander_pb2 import RegisterReply, ListenWaypointReply, SendpositionReply
+from  dronecommander_pb2_grpc import DroneCommanderServicer, add_DroneCommanderServicer_to_server
+from helpers_server import RouteGenerator, point_to_waypoint, visualize_path
 
 HOST_ADRESS = "[::]:50051"
+REPORTING_PERIOD = 10
 
-class DroneCommander(dronecommander_pb2_grpc.DroneCommanderServicer):
+class DroneCommander(DroneCommanderServicer):
     
-    def __init__(self) -> None:
+    def __init__(self, vis=False) -> None:
         """
         Initialize the server.
         
@@ -22,6 +21,8 @@ class DroneCommander(dronecommander_pb2_grpc.DroneCommanderServicer):
         """
         self._count = 0
         self.route_generator = RouteGenerator()
+        self.positions = {}
+        self.vis = vis
         
     def register(self, request, context):
         """
@@ -33,8 +34,9 @@ class DroneCommander(dronecommander_pb2_grpc.DroneCommanderServicer):
         """
         self._count += 1
         drone_id = self._count
-        print(f"Registering drone with id {drone_id}")
-        return dronecommander_pb2.RegisterReply(id=drone_id)
+        logging.info(f"Registering drone with id {drone_id}")
+        self.positions[drone_id] = []
+        return RegisterReply(id=drone_id)
     
     async def listen_waypoint(self, request, context):
         """
@@ -46,11 +48,11 @@ class DroneCommander(dronecommander_pb2_grpc.DroneCommanderServicer):
         """
         drone_id = request.id
         route, route_id = self.route_generator.gen_route()
-        print(f"Giving route {route_id} to drone {drone_id}")
+        logging.info(f"Giving route {route_id} to drone {drone_id}")
         for point in route:
             waypoint = point_to_waypoint(point)
-            waypoint_reply = dronecommander_pb2.ListenWaypointReply(waypoint=waypoint)
-            print(f"Yielding position to drone {drone_id}.")
+            waypoint_reply = ListenWaypointReply(waypoint=waypoint)
+            logging.info(f"Yielding position to drone {drone_id}.")
             yield waypoint_reply
             await asyncio.sleep(10)
     
@@ -62,8 +64,16 @@ class DroneCommander(dronecommander_pb2_grpc.DroneCommanderServicer):
         :param context: The context object.
         :return: An empty response.
         """
-        print(f"Position ping received from drone {request.id}")   
-        return dronecommander_pb2.SendpositionReply()
+        drone_id = request.id
+        self.positions[drone_id].append(request.position)
+
+        # Visualize path
+        if len(self.positions[drone_id]) % REPORTING_PERIOD == 0 and self.vis:
+            path_number = len(self.positions[drone_id]) // REPORTING_PERIOD
+            visualize_path(self.positions[drone_id], path_number, drone_id)
+
+        logging.info(f"Position ping received from drone {drone_id}")   
+        return SendpositionReply()
 
 async def serve() -> None:
     """
@@ -72,10 +82,10 @@ async def serve() -> None:
     :return: None
     """
     server = grpc.aio.server()
-    dronecommander_pb2_grpc.add_DroneCommanderServicer_to_server(DroneCommander(), server)
+    add_DroneCommanderServicer_to_server(DroneCommander(vis=True), server)
     server.add_insecure_port(HOST_ADRESS)
     logging.info(f"Starting server on {HOST_ADRESS}.")
-    await server.start() 
+    await server.start()
     await server.wait_for_termination()
 
 if __name__ == "__main__":

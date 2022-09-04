@@ -92,7 +92,6 @@ class Point:
 class Drone:
 
     def __init__(self, drone_id, vis=False):
-        self.positions = []
         self.id = drone_id
         self.speed = SPEED
         self.vis = vis
@@ -118,7 +117,7 @@ class Drone:
         :param target: The target.
         :return: None
         """
-        self.target = Point(target.lat, target.lon)
+        self.target = Point(lon=target.lon, lat=target.lat)
         self.target_time = time.time()
         
     def set_position(self):
@@ -141,7 +140,6 @@ class Drone:
             
             dist_traveled = SPEED * self.time_since_target
             dist_to_target = self.lon_lat_to_dist(pos_lon, pos_lat, target_lon, target_lat)
-                
             self.target_time = time.time()
             
             # Drone has reached target already
@@ -151,51 +149,12 @@ class Drone:
             # Calculate how much the drone has moved
             else:  
                 frac_traveled = dist_traveled / dist_to_target
-            
+                #print(frac_traveled)
                 new_lon = pos_lon + frac_traveled * (target_lon - pos_lon)
                 new_lat = pos_lat + frac_traveled * (target_lat - pos_lat)
                 
                 self.position = Point(lat=new_lat, lon=new_lon)
             
-            self.positions.append(self.position)
-            
-            if len(self.positions) % REPORTING_PERIOD == 0 and self.vis:
-                path_number = len(self.positions) // REPORTING_PERIOD
-                self._visualize_path(path_number)
-        
-    def _points_to_plot_format(self):
-        """
-        Makes the points in the positions list into two lists
-        suitable for plotting.
-        
-        :return: Two lists, one with the lats and one with the lons.
-        """
-        points_lat = []
-        points_lon = []
-        
-        for point in self.positions:
-            points_lat.append(point.lat)
-            points_lon.append(point.lon)
-        return points_lat, points_lon
-    
-    def _visualize_path(self, path_number):
-        """
-        If the visualization is on, plot the path of the drone.
-        
-        :return: None
-        """
-        import matplotlib.pyplot as plt
-        lats, lons = self._points_to_plot_format()
-        plt.plot(lats, lons, c='r', marker='o')
-        
-        # Plot text with start and end point
-        plt.text(lats[0], lons[0], 'Start', fontsize=10)
-        plt.text(lats[-1], lons[-1], 'End', fontsize=10)
-        plt.grid()
-        im_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', fr"data\drone_path_{path_number}.png"))
-        plt.savefig(im_path, dpi=300)
-        plt.clf()
-    
     def lon_lat_to_dist(self, lon1, lat1, lon2, lat2):
         """
         Calculate the distance between two points in meters.
