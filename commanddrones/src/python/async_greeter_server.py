@@ -81,7 +81,7 @@ async def serve() -> None:
     :return: None
     """
     server = grpc.aio.server()
-    add_DroneCommanderServicer_to_server(DroneCommander(vis=True), server)
+    add_DroneCommanderServicer_to_server(DroneCommander(vis=False), server)
     server.add_insecure_port(HOST_ADRESS)
     logging.info(f"Starting server on {HOST_ADRESS}.")
     await server.start()

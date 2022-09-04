@@ -1,6 +1,5 @@
 import random
 import time
-import os
 import dronecommander_pb2
 
 from dataclasses import dataclass
