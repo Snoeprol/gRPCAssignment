@@ -10,9 +10,7 @@ import dronecommander_pb2_grpc
 from helpers_client import gen_random_position, gen_new_position, register_drone
 from helpers_client import Drone
 
-import time
-
-timer = time.time()
+CHANNEL = "localhost:50051"
 
 async def send_location(stub, pingtime, drone):
     """
@@ -25,20 +23,16 @@ async def send_location(stub, pingtime, drone):
     """
     position = gen_random_position()
     while True:
-        global timer
+        drone.set_position()
         position = gen_new_position(position)
         position_request = dronecommander_pb2.SendpositionRequest(position=position, id=drone.id)
         stub.send_position(position_request)
-        print(timer - time.time())
-        timer = time.time()
-        
-        drone.set_position(position)
-        print('Sending position')
+        print('Pinged server')
         await asyncio.sleep(pingtime)
 
 async def receive_location(stub, drone):
     """
-    Accepts a location from the server and moves the drone to that location.
+    Accepts a location from the server and sends the drone to that location.
     
     :param stub: The stub object.
     :param drone: The drone.
@@ -46,10 +40,10 @@ async def receive_location(stub, drone):
     """
     # May be stuck here if no waypoint is given for a while
     async for response in stub.listen_waypoint(
-        dronecommander_pb2.ListenWaypointRequest(id=drone.id)
+        dronecommander_pb2.ListenWaypointRequest(id=drone.id),
     ):  
         print(
-            f"Moving drone to waypoint: lat {response.waypoint.lat:.2f}, lon {response.waypoint.lon:.2f}",
+            f"Starting path to: lat {response.waypoint.lat:.3f}, lon {response.waypoint.lon:.3f}",
         )
         drone.set_target(response.waypoint)
 
@@ -60,12 +54,12 @@ async def run(pingtime=2) -> None:
     :param pingtime: The time between sending positions.
     :return: None.
     """
-    async with grpc.aio.insecure_channel("localhost:50051") as channel:
+    async with grpc.aio.insecure_channel(CHANNEL) as channel:
         stub = dronecommander_pb2_grpc.DroneCommanderStub(channel)
         
         # Register drone
         drone_id = await register_drone(stub)
-        drone = Drone(drone_id)
+        drone = Drone(drone_id, vis=True)
         
         # Start sending position and receiving locations
         t1 = asyncio.create_task(send_location(stub, pingtime, drone))

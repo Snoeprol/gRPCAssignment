@@ -29,7 +29,7 @@ class RouteGenerator:
         
         :return: A list of routes.
         """
-        with open(open(self.FILE_LOC, 'r', encoding='utf-8')) as f:
+        with open(self.FILE_LOC, 'r', encoding='utf-8') as f:
             routes = json.load(f)
         return routes
     

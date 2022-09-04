@@ -11,20 +11,12 @@ from python.async_greeter_server import serve
 class TestDrone(unittest.TestCase):
     
     def test_drone(self):
-        
-        process_server = multiprocessing.Process(target=asyncio.run(serve()))
-        process_server.start()
+        loop = asyncio.get_event_loop()
+
+        future_server = asyncio.run_coroutine_threadsafe(serve(), loop)
+        future_drone =  asyncio.run_coroutine_threadsafe(run(), loop)
         # Give server time to start
-        time.sleep(1)
         
-        # Start drone
-        process_drone = multiprocessing.Process(target=asyncio.run(run()))
-        
-        process_drone.start()
         time.sleep(10)
-        
-        processes = [process_server, process_drone]
-        
-        for process in processes:
-            process.terminate()
-            process.join()
+        result = future_server.result()
+        result = future_drone.result()

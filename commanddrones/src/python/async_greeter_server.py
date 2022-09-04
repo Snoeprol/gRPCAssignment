@@ -51,8 +51,8 @@ class DroneCommander(dronecommander_pb2_grpc.DroneCommanderServicer):
             waypoint = point_to_waypoint(point)
             waypoint_reply = dronecommander_pb2.ListenWaypointReply(waypoint=waypoint)
             print(f"Yielding position to drone {drone_id}.")
-            await asyncio.sleep(10)
             yield waypoint_reply
+            await asyncio.sleep(10)
     
     def send_position(self, request, context):
         """
@@ -75,7 +75,7 @@ async def serve() -> None:
     dronecommander_pb2_grpc.add_DroneCommanderServicer_to_server(DroneCommander(), server)
     server.add_insecure_port(HOST_ADRESS)
     logging.info(f"Starting server on {HOST_ADRESS}.")
-    await server.start()
+    await server.start() 
     await server.wait_for_termination()
 
 if __name__ == "__main__":
